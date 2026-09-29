@@ -97,7 +97,7 @@ def index():
     tasks = get_db().execute(sql, params).fetchall()
 
     counts = get_db().execute(
-        "SELECT SUM(done = 0) AS open, SUM(done = 1) AS done FROM tasks").fetchone()
+        "SELECT COUNT(CASE WHEN done = 0 THEN 1 END) AS open, COUNT(CASE WHEN done = 1 THEN 1 END) AS done FROM tasks").fetchone()
     return render_template("index.html", tasks=tasks, view=view, q=q,
                            category=category,
                            today=date.today().isoformat(), now=int(time.time()),
