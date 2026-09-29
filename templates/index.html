@@ -6,564 +6,431 @@
 <title>FlowPilot</title>
 <style>
   :root {
-    --bg: #f5f7fb;
-    --panel: #ffffff;
-    --soft: #eef4ff;
-    --line: #e2e8f0;
-    --ink: #162033;
+    --bg: #edf5ff;
+    --bg-strong: #dfeeff;
+    --panel: rgba(255,255,255,0.92);
+    --panel-strong: #ffffff;
+    --soft: #f6f9ff;
+    --line: #dfeaf8;
+    --ink: #172033;
     --muted: #64748b;
-    --brand: #4f46e5;
-    --brand-2: #7c3aed;
-    --success: #16a34a;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --work: #2563eb;
+    --brand: #2196f3;
+    --brand-deep: #0b7de5;
+    --brand-soft: rgba(33,150,243,0.12);
+    --work: #4f8ef7;
     --personal: #ec4899;
-    --health: #10b981;
-    --focus: #f2f4ff;
+    --health: #22c55e;
+    --general: #6b7280;
+    --low: #22c55e;
+    --medium: #f59e0b;
+    --high: #ef4444;
+    --shadow: 0 18px 42px rgba(17, 24, 39, 0.08);
   }
-
-  * { box-sizing: border-box; }
+  body.dark-theme {
+    --bg: #09111d;
+    --bg-strong: #0f172a;
+    --panel: rgba(13, 20, 32, 0.9);
+    --panel-strong: #0f172a;
+    --soft: #111b2a;
+    --line: rgba(148,163,184,0.18);
+    --ink: #e5eefb;
+    --muted: #9fb0c7;
+    --brand: #56b5ff;
+    --brand-deep: #80d1ff;
+    --brand-soft: rgba(86,181,255,0.14);
+    --shadow: 0 18px 42px rgba(2,6,23,0.52);
+  }
+  * { box-sizing:border-box; }
   body {
-    margin: 0;
-    background: linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%);
-    color: var(--ink);
-    font: 16px/1.5 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin:0;
+    font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+    background:linear-gradient(180deg, var(--bg) 0%, #f9fbff 100%);
+    color:var(--ink);
+    transition: background 0.20s ease, color 0.20s ease;
+  }
+  body.dark-theme {
+    background:linear-gradient(180deg, var(--bg) 0%, #0b1220 100%);
+  }
+  a { text-decoration:none; }
+  button, input, select, textarea {
+    font:inherit;
   }
   main {
-    max-width: 1120px;
-    margin: 0 auto;
-    padding: 32px 20px 80px;
+    max-width: 1040px;
+    margin:0 auto;
+    padding:28px 18px 80px;
   }
-  .topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 22px;
-    flex-wrap: wrap;
+  .masthead {
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    margin-bottom:20px;
   }
   .brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    display:flex; align-items:center; gap:14px;
   }
-  .logo {
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--brand), var(--brand-2));
-    display: grid;
-    place-items: center;
-    color: white;
-    font-weight: 700;
-    box-shadow: 0 12px 26px rgba(79, 70, 229, 0.22);
+  .brand-mark {
+    width:46px; height:46px; border-radius:15px; background:linear-gradient(135deg, var(--brand), #7c3aed);
+    display:grid; place-items:center; font-weight:800; color:#fff; font-size:1.2rem;
+    box-shadow:0 12px 26px rgba(33,150,243,0.22);
   }
   h1 {
-    margin: 0;
-    font-size: clamp(2rem, 4vw, 2.7rem);
-    letter-spacing: -0.04em;
+    margin:0; letter-spacing:-0.06em; font-size: clamp(2rem, 4vw, 2.9rem); line-height:1.05;
   }
-  .sub {
-    margin: 8px 0 0;
-    color: var(--muted);
-    font-size: 0.96rem;
+  .tagline {
+    margin:6px 0 0; color:var(--muted); font-size:0.96rem;
   }
-  .status-pill {
-    border: 1px solid var(--line);
-    background: rgba(255,255,255,0.7);
-    padding: 8px 12px;
-    border-radius: 999px;
-    font-size: 0.9rem;
-    color: var(--muted);
+  .top-right {
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
   }
-
-  .layout {
-    display: grid;
-    grid-template-columns: 360px minmax(0, 1fr);
-    gap: 22px;
+  .summary-pill {
+    border:1px solid var(--line); background:rgba(255,255,255,0.75); border-radius:999px;
+    padding:8px 12px; font-size:0.88rem; color:var(--muted);
   }
-
+  body.dark-theme .summary-pill {
+    background: rgba(15,23,42,0.65);
+  }
+  .icon-btn {
+    width:42px; height:42px; border-radius:12px; border:1px solid var(--line); background:var(--panel);
+    color:var(--ink); font-size:1.1rem; cursor:pointer; box-shadow: 0 10px 18px rgba(15,23,42,0.04);
+  }
+  .plus-btn {
+    width:42px; height:42px; border-radius:12px; border:none; background:var(--brand); color:#fff;
+    font-size:1.8rem; line-height:1; cursor:pointer; box-shadow:0 12px 24px rgba(33,150,243,0.2);
+  }
   .panel {
-    background: rgba(255,255,255,0.9);
-    border: 1px solid var(--line);
-    border-radius: 22px;
-    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+    background:var(--panel); border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow);
   }
-
-  .sidebar { padding: 18px; }
-  .add {
-    display: grid;
-    gap: 12px;
-    padding: 16px;
-    background: var(--soft);
-    border-radius: 18px;
-    border: 1px solid #dae5ff;
+  .add-panel {
+    display:none; margin-bottom:18px; padding:14px;
   }
-  .add input[type=text],
-  .add input[type=date],
-  .add input[type=datetime-local],
-  .add select,
-  .search input,
-  details textarea {
-    width: 100%;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 10px 12px;
-    background: white;
+  .add-panel.open { display:block; }
+  .add-form {
+    display:grid; gap:12px; background:var(--soft); border:1px solid rgba(33,150,243,0.08); border-radius:18px; padding:16px;
+  }
+  .field-grid {
+    display:grid; grid-template-columns: 1.2fr 1fr 1fr; gap:10px;
+  }
+  .field-grid .full { grid-column:1 / -1; }
+  .field {
+    display:grid; gap:6px;
+  }
+  .field label {
+    font-size:0.76rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); font-weight:700;
+  }
+  input, select, textarea, button {
+    border-radius:12px; border:1px solid var(--line); font:inherit; background:#fff; color:var(--ink);
+    padding:10px 12px;
+  }
+  body.dark-theme input, body.dark-theme select, body.dark-theme textarea, body.dark-theme button {
+    background: rgba(15,23,42,0.75);
+    border-color: rgba(148,163,184,0.2);
     color: var(--ink);
-    font: inherit;
   }
-  .two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-  .single-col {
-    display: grid;
-    gap: 10px;
-  }
+  textarea { min-height:90px; resize:vertical; }
   button {
-    font: inherit;
-    cursor: pointer;
-    border: 0;
-    border-radius: 12px;
-    padding: 10px 14px;
-    background: linear-gradient(135deg, var(--brand), var(--brand-2));
-    color: white;
-    font-weight: 600;
-    transition: transform 0.15s ease, opacity 0.15s ease;
+    cursor:pointer; background:var(--brand); color:#fff; border:none; font-weight:700;
   }
-  button:hover { transform: translateY(-1px); }
-  button.ghost {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--line);
+  .toolbar {
+    display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:14px 16px 10px;
   }
-  button.ghost:hover { background: #f8fafc; }
-  .mini-btn {
-    padding: 7px 10px;
-    font-size: 0.84rem;
-    border-radius: 10px;
+  .status-tabs {
+    display:flex; gap:8px; flex-wrap:wrap;
   }
-
-  .filters {
-    margin-top: 18px;
-    display: grid;
-    gap: 12px;
+  .status-tab {
+    display:inline-flex; align-items:center; justify-content:center; padding:8px 12px; border-radius:999px;
+    border:1px solid var(--line); background:#f8fbfe; color:var(--muted); font-weight:700;
   }
-  .filter-group h3 {
-    margin: 0 0 10px;
-    font-size: 0.82rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
+  body.dark-theme .status-tab {
+    background: rgba(15,23,42,0.9);
   }
-  .filter-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  .status-tab.active {
+    background:var(--brand); color:#fff; border-color:var(--brand); box-shadow:0 10px 18px rgba(33,150,243,0.16);
+  }
+  .type-filters {
+    display:flex; gap:8px; flex-wrap:wrap; padding:0 16px 12px;
   }
   .chip {
-    padding: 7px 10px;
-    border-radius: 999px;
-    background: #f8fafc;
-    border: 1px solid var(--line);
-    color: var(--muted);
-    text-decoration: none;
-    font-size: 0.84rem;
+    display:inline-flex; align-items:center; justify-content:center; padding:8px 12px; border-radius:999px;
+    border:1px solid var(--line); background:#f8fafc; color:var(--muted); font-weight:700;
+  }
+  body.dark-theme .chip {
+    background: rgba(15,23,42,0.9);
   }
   .chip.active {
-    background: #eef2ff;
-    border-color: #c7d2fe;
-    color: var(--brand);
-    font-weight: 600;
+    background:var(--brand-soft); border-color: rgba(33,150,243,0.25); color:var(--brand-deep);
   }
-
-  .main-panel { padding: 18px; }
-  .toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
+  .chip.work { color:var(--work); }
+  .chip.personal { color:var(--personal); }
+  .chip.health { color:var(--health); }
+  .chip.general { color:var(--general); }
+  .task-list {
+    list-style:none; margin:0; padding:16px; display:grid; gap:12px;
   }
-  .tabs {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
+  .task-item {
+    background:var(--panel-strong); border:1px solid var(--line); border-left:5px solid #cbd5e1; border-radius:18px; padding:14px;
+    display:grid; gap:12px;
+    box-shadow:0 6px 18px rgba(15, 23, 42, 0.025);
   }
-  .tab {
-    display: inline-flex;
-    align-items: center;
-    padding: 7px 12px;
-    border-radius: 999px;
-    text-decoration: none;
-    color: var(--muted);
-    border: 1px solid transparent;
-    font-size: 0.9rem;
+  .task-item.high { border-left-color: var(--high); }
+  .task-item.medium { border-left-color: var(--medium); }
+  .task-item.low { border-left-color: var(--low); }
+  .task-item.done {
+    opacity:0.75; background: rgba(148,163,184,0.04);
   }
-  .tab.active {
-    background: #111827;
-    color: white;
-  }
-  .search {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .alerts {
-    display: grid;
-    gap: 10px;
-    margin: 0 0 18px;
-  }
-  .alert {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: #fff1f2;
-    border: 1px solid #fecdd3;
-    color: #7f1d1d;
-  }
-  .alert button {
-    background: #ef4444;
-    padding: 7px 10px;
-  }
-
-  ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 14px;
-  }
-  li {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-left: 5px solid #94a3b8;
-    padding: 14px 14px 12px;
-    border-radius: 18px;
-    display: grid;
-    gap: 12px;
-  }
-  li.high { border-left-color: var(--danger); }
-  li.medium { border-left-color: var(--warning); }
-  li.low { border-left-color: var(--success); }
-  li.done {
-    opacity: 0.74;
-    background: #f8fafc;
-  }
-  li.work { background: linear-gradient(180deg, rgba(37,99,235,0.02), rgba(255,255,255,1)); }
-  li.personal { background: linear-gradient(180deg, rgba(236,72,153,0.02), rgba(255,255,255,1)); }
-  li.health { background: linear-gradient(180deg, rgba(16,185,129,0.02), rgba(255,255,255,1)); }
-
-  .task-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+  .task-top {
+    display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;
   }
   .task-main {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1;
-    min-width: 0;
+    display:flex; align-items:flex-start; gap:10px; flex:1; min-width:0;
   }
-  .check {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: 2px solid var(--muted);
-    background: transparent;
-    padding: 0;
-    flex-shrink: 0;
+  .check-btn {
+    width:20px; height:20px; border-radius:50%; border:2px solid #94a3b8; background:#fff; padding:0; flex:none;
   }
-  li.done .check { background: var(--success); border-color: var(--success); }
-  .title {
-    font-weight: 700;
-    font-size: 1.04rem;
-    word-break: break-word;
+  body.dark-theme .check-btn { background: rgba(15,23,42,0.8); }
+  .task-item.done .check-btn { background:var(--low); border-color:var(--low); }
+  .task-title {
+    font-weight:700; font-size:1.04rem; word-break:break-word; line-height:1.4;
   }
-  li.done .title {
-    text-decoration: line-through;
-    color: var(--muted);
-  }
-  .labels {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+  .task-item.done .task-title { text-decoration:line-through; color:var(--muted); }
+  .task-badges {
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
   }
   .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border-radius: 999px;
-    padding: 5px 9px;
-    font-size: 0.76rem;
-    font-weight: 700;
-    text-transform: capitalize;
-    letter-spacing: 0.01em;
+    border-radius:999px; padding:6px 9px; font-size:0.74rem; font-weight:700; letter-spacing:0.01em; text-transform:capitalize;
   }
-  .badge.category-work { background: rgba(37, 99, 235, 0.1); color: var(--work); }
-  .badge.category-personal { background: rgba(236, 72, 153, 0.1); color: var(--personal); }
-  .badge.category-health { background: rgba(16, 185, 129, 0.1); color: var(--health); }
-  .badge.category-general { background: rgba(79, 70, 229, 0.1); color: var(--brand); }
-  .badge.time-today { background: rgba(59,130,246,0.08); color: #1d4ed8; }
-  .badge.time-tomorrow { background: rgba(245,158,11,0.1); color: #b45309; }
-  .badge.time-later { background: rgba(148,163,184,0.12); color: #475569; }
-  .badge.priority-high { background: rgba(239,68,68,0.1); color: var(--danger); }
-  .badge.priority-medium { background: rgba(245,158,11,0.1); color: #b45309; }
-  .badge.priority-low { background: rgba(34,197,94,0.1); color: #15803d; }
-
-  .meta {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    color: var(--muted);
-    font-size: 0.85rem;
+  .badge.category-work { background: rgba(79,142,247,0.12); color:var(--work); }
+  .badge.category-personal { background: rgba(236,72,153,0.12); color:var(--personal); }
+  .badge.category-health { background: rgba(34,197,94,0.12); color:var(--health); }
+  .badge.category-general { background: rgba(107,114,128,0.12); color:var(--general); }
+  .badge.priority-high { background: rgba(239,68,68,0.12); color:var(--high); }
+  .badge.priority-medium { background: rgba(245,158,11,0.12); color:var(--medium); }
+  .badge.priority-low { background: rgba(34,197,94,0.12); color:var(--low); }
+  .meta-row {
+    display:flex; gap:10px; flex-wrap:wrap; color:var(--muted); font-size:0.84rem;
   }
-  .meta .late { color: var(--danger); font-weight: 700; }
+  .late { color:var(--high); font-weight:700; }
   .timer {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    color: var(--muted);
-    font-size: 0.88rem;
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap; color:var(--muted); font-size:0.9rem;
   }
-  .timer .clock {
-    font-weight: 700;
-    color: var(--ink);
-    font-variant-numeric: tabular-nums;
+  .clock {
+    font-weight:700; color:var(--ink); min-width:72px; font-variant-numeric:tabular-nums;
   }
-  .running .clock { color: var(--brand); }
+  .timer.running .clock { color:var(--brand); }
   .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--brand);
-    animation: blink 1.2s infinite;
+    width:8px; height:8px; border-radius:50%; background:var(--brand); animation:blink 1.2s infinite;
   }
-  @keyframes blink { 50% { opacity: .2; } }
-
+  @keyframes blink { 50% { opacity:0.2; } }
+  .mini-btn {
+    border:1px solid var(--line); background:#fff; color:var(--muted); padding:7px 10px; border-radius:10px; font-weight:700;
+  }
+  body.dark-theme .mini-btn { background: rgba(15,23,42,0.8); }
+  .primary-mini { background:var(--brand); color:#fff; border-color:var(--brand); }
   details {
-    border-top: 1px solid var(--line);
-    padding-top: 12px;
+    border-top:1px solid var(--line); padding-top:12px;
   }
   summary {
-    cursor: pointer;
-    color: var(--brand);
-    font-weight: 600;
+    cursor:pointer; color:var(--brand-deep); font-weight:700;
   }
   .nested-form {
-    display: grid;
-    gap: 10px;
-    margin-top: 8px;
+    display:grid; gap:10px; margin-top:10px;
   }
   .empty {
-    text-align: center;
-    background: rgba(255,255,255,0.7);
-    border: 1px dashed var(--line);
-    border-radius: 18px;
-    padding: 40px 20px;
-    color: var(--muted);
+    text-align:center; padding:40px 12px; color:var(--muted); border:1px dashed var(--line); border-radius:18px; background:rgba(255,255,255,0.7);
   }
-
-  @media (max-width: 900px) {
-    .layout { grid-template-columns: 1fr; }
-    .sidebar { order: 2; }
-    .main-panel { order: 1; }
+  .alert {
+    display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 14px; border-radius:12px; background:#fff0f0; border:1px solid #fecaca; color:#7f1d1d; margin:0 0 12px;
+  }
+  .alert button { background:var(--high); }
+  @media (max-width: 700px) {
+    .field-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
   <main>
-    <div class="topbar">
+    <header class="masthead">
       <div class="brand">
-        <div class="logo">F</div>
+        <div class="brand-mark">F</div>
         <div>
           <h1>FlowPilot</h1>
-          <p class="sub">Focus on what matters, today and tomorrow.</p>
+          <p class="tagline">Flow into your day and focus on what matters.</p>
         </div>
       </div>
-      <div class="status-pill">{{ open_count }} open · {{ done_count }} done</div>
-    </div>
+      <div class="top-right">
+        <span class="summary-pill">{{ open_count }} pending · {{ done_count }} done</span>
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme">☾</button>
+        <button class="plus-btn" id="toggle-add" type="button">+</button>
+      </div>
+    </header>
 
-    <div class="layout">
-      <aside class="panel sidebar">
-        <form class="add" method="post" action="{{ url_for('add') }}">
-          <input type="text" name="title" placeholder="What needs doing?" required autofocus>
-
-          <div class="two-col">
-            <select name="category" aria-label="Category">
-              <option value="work">Work</option>
-              <option value="personal">Personal</option>
-              <option value="health">Health</option>
-              <option value="general" selected>General</option>
-            </select>
-            <select name="timeframe" aria-label="Timeframe">
-              <option value="today" selected>Today</option>
-              <option value="tomorrow">Tomorrow</option>
-              <option value="later">Later</option>
-            </select>
+    <section class="panel add-panel" id="add-panel">
+      <form class="add-form" method="post" action="{{ url_for('add') }}">
+        <div class="field-grid">
+          <input class="full" type="text" name="title" placeholder="What needs your focus?" required>
+          <select name="category" aria-label="Category">
+            <option value="work">Work</option>
+            <option value="personal">Personal</option>
+            <option value="health">Health</option>
+            <option value="general" selected>General</option>
+          </select>
+          <select name="priority" aria-label="Urgency">
+            <option value="high">High</option>
+            <option value="medium" selected>Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <div class="field">
+            <label for="due">Due date</label>
+            <input id="due" type="date" name="due" aria-label="Due date">
           </div>
-
-          <div class="two-col">
-            <select name="priority" aria-label="Urgency">
-              <option value="high">High urgency</option>
-              <option value="medium" selected>Medium urgency</option>
-              <option value="low">Low urgency</option>
-            </select>
-            <input type="date" name="due" aria-label="Due date">
-          </div>
-
-          <input type="datetime-local" name="remind_at" aria-label="Reminder time" placeholder="Reminder">
-          <button>Add task</button>
-        </form>
-
-        <div class="filters">
-          <div class="filter-group">
-            <h3>Category</h3>
-            <div class="filter-row">
-              {% for value, label in [('all','All'), ('work','Work'), ('personal','Personal'), ('health','Health'), ('general','General')] %}
-                <a class="chip {{ 'active' if category==value }}" href="{{ url_for('index', view=view, q=q, category=value, timeframe=timeframe) }}">{{ label }}</a>
-              {% endfor %}
-            </div>
-          </div>
-
-          <div class="filter-group">
-            <h3>When</h3>
-            <div class="filter-row">
-              {% for value, label in [('all','All'), ('today','Today'), ('tomorrow','Tomorrow'), ('later','Later')] %}
-                <a class="chip {{ 'active' if timeframe==value }}" href="{{ url_for('index', view=view, q=q, category=category, timeframe=value) }}">{{ label }}</a>
-              {% endfor %}
-            </div>
+          <div class="field">
+            <label for="remind_at">Reminder</label>
+            <input id="remind_at" type="datetime-local" name="remind_at" aria-label="Reminder time">
           </div>
         </div>
-      </aside>
+        <button type="submit">Add task</button>
+      </form>
+    </section>
 
-      <section class="panel main-panel">
-        <div class="toolbar">
-          <nav class="tabs">
-            {% for v, label in [('all','All'),('open','Open'),('done','Done')] %}
-              <a class="tab {{ 'active' if view==v }}" href="{{ url_for('index', view=v, q=q, category=category, timeframe=timeframe) }}">{{ label }}</a>
-            {% endfor %}
-          </nav>
-
-          <form class="search" method="get">
-            <input type="hidden" name="view" value="{{ view }}">
-            <input type="hidden" name="category" value="{{ category }}">
-            <input type="hidden" name="timeframe" value="{{ timeframe }}">
-            <input type="search" name="q" value="{{ q }}" placeholder="Search tasks and notes">
-            <button class="mini-btn">Search</button>
-          </form>
-        </div>
-
-        <div class="alerts" id="alerts" role="status" aria-live="polite"></div>
-
-        <ul>
-          {% for t in tasks %}
-            <li class="{{ t.priority }} {{ t.category }} {{ 'done' if t.done }}" data-id="{{ t.id }}" data-title="{{ t.title }}"
-                {% if t.remind_at and not t.reminded and not t.done %}data-remind="{{ t.remind_at }}"{% endif %}>
-              <div class="task-head">
-                <div class="task-main">
-                  <form method="post" action="{{ url_for('toggle', task_id=t.id) }}">
-                    <button class="check" aria-label="Mark as {{ 'to do' if t.done else 'done' }}">{{ '✓' if t.done }}</button>
-                  </form>
-                  <span class="title">{{ t.title }}</span>
-                </div>
-
-                <div class="labels">
-                  <span class="badge category-{{ t.category }}">{{ t.category }}</span>
-                  <span class="badge time-{{ t.timeframe }}">{{ t.timeframe }}</span>
-                  <span class="badge priority-{{ t.priority }}">{{ t.priority }}</span>
-                </div>
-              </div>
-
-              <div class="meta">
-                {% if t.due %}
-                  <span class="{{ 'late' if t.due < today and not t.done }}">{{ 'Overdue: ' if t.due < today and not t.done }}Due {{ t.due }}</span>
-                {% endif %}
-                {% if t.remind_at %}
-                  <span>• Reminder: {{ t.remind_at.replace('T', ' at ') }}{{ ' (shown)' if t.reminded }}</span>
-                {% endif %}
-              </div>
-
-              <div class="timer {{ 'running' if t.timer_started }}" data-spent="{{ t.time_spent }}" data-started="{{ t.timer_started or '' }}">
-                {% if t.timer_started %}<span class="dot" aria-hidden="true"></span>{% endif %}
-                <span class="clock">{{ t.time_spent|hms }}</span>
-                {% if not t.done %}
-                  <form method="post" action="{{ url_for('timer', task_id=t.id) }}">
-                    <button class="mini-btn {{ 'stop' if t.timer_started }}">{{ 'Stop timer' if t.timer_started else ('Resume timer' if t.time_spent else 'Start timer') }}</button>
-                  </form>
-                {% endif %}
-                {% if t.time_spent and not t.timer_started %}
-                  <form method="post" action="{{ url_for('timer_reset', task_id=t.id) }}">
-                    <button class="ghost mini-btn">Reset</button>
-                  </form>
-                {% endif %}
-              </div>
-
-              {% if t.notes %}<div class="meta">Notes: {{ t.notes }}</div>{% endif %}
-
-              <details>
-                <summary>{{ 'Edit note' if t.notes else 'Add a note' }}</summary>
-                <form method="post" action="{{ url_for('save_notes', task_id=t.id) }}" class="nested-form">
-                  <textarea name="notes" placeholder="Detail, link, context...">{{ t.notes }}</textarea>
-                  <button>Save note</button>
-                </form>
-              </details>
-
-              {% if not t.done %}
-              <details>
-                <summary>{{ 'Change reminder' if t.remind_at else 'Set a reminder' }}</summary>
-                <form method="post" action="{{ url_for('set_reminder', task_id=t.id) }}" class="nested-form">
-                  <input type="datetime-local" name="remind_at" value="{{ t.remind_at }}" aria-label="Reminder time">
-                  <button>Save reminder</button>
-                </form>
-              </details>
-              {% endif %}
-
-              <div style="display:flex; justify-content:flex-end;">
-                <form method="post" action="{{ url_for('delete', task_id=t.id) }}">
-                  <button class="ghost mini-btn">Delete</button>
-                </form>
-              </div>
-            </li>
-          {% else %}
-            <li class="empty">{{ 'No matches. Try another filter.' if q or category != 'all' or timeframe != 'all' else 'Nothing here yet. Add your first task above.' }}</li>
+    <section class="panel">
+      <div class="toolbar">
+        <nav class="status-tabs" aria-label="Status filters">
+          {% for value,label in [('all','All'),('pending','Pending'),('done','Done')] %}
+            <a class="status-tab {{ 'active' if view==value }}" href="{{ url_for('index', view=value, q=q, category=category) }}">{{ label }}</a>
           {% endfor %}
-        </ul>
-      </section>
-    </div>
+        </nav>
+      </div>
+
+      <div class="type-filters" aria-label="Task types">
+        {% for value,label in [('all','All Types'),('health','Health'),('personal','Personal'),('work','Work'),('general','General')] %}
+          <a class="chip {{ value }} {{ 'active' if category==value }}" href="{{ url_for('index', view=view, q=q, category=value) }}">{{ label }}</a>
+        {% endfor %}
+      </div>
+
+      <div id="alerts" role="status" aria-live="polite"></div>
+
+      <ul class="task-list">
+        {% for t in tasks %}
+          <li class="task-item {{ t.priority }} {{ 'done' if t.done }}" data-id="{{ t.id }}" data-title="{{ t.title }}" {% if t.remind_at and not t.reminded and not t.done %}data-remind="{{ t.remind_at }}"{% endif %}>
+            <div class="task-top">
+              <div class="task-main">
+                <form method="post" action="{{ url_for('toggle', task_id=t.id) }}">
+                  <button class="check-btn" aria-label="Mark as {{ 'to do' if t.done else 'done' }}">{{ '✓' if t.done }}</button>
+                </form>
+                <div class="task-title">{{ t.title }}</div>
+              </div>
+              <div class="task-badges">
+                <span class="badge category-{{ t.category }}">{{ t.category }}</span>
+                <span class="badge priority-{{ t.priority }}">{{ t.priority }}</span>
+              </div>
+            </div>
+
+            <div class="meta-row">
+              {% if t.due %}
+                <span class="{{ 'late' if t.due < today and not t.done }}">{{ 'Overdue: ' if t.due < today and not t.done }}{{ t.due }}</span>
+              {% endif %}
+              {% if t.remind_at %}
+                <span>• Reminder: {{ t.remind_at.replace('T', ' at ') }}{{ ' (shown)' if t.reminded }}</span>
+              {% endif %}
+            </div>
+
+            <div class="timer {{ 'running' if t.timer_started }}" data-spent="{{ t.time_spent }}" data-remaining="{{ t.remaining_seconds }}" data-started="{{ t.timer_started or '' }}">
+              {% if t.timer_started %}<span class="dot" aria-hidden="true"></span>{% endif %}
+              <span class="clock">{{ t.remaining_seconds|hms }}</span>
+              {% if not t.done %}
+                <form method="post" action="{{ url_for('timer', task_id=t.id) }}">
+                  <button class="mini-btn primary-mini" type="submit">{{ 'Pause' if t.timer_started else 'Start 25 min' }}</button>
+                </form>
+                <form method="post" action="{{ url_for('timer_reset', task_id=t.id) }}">
+                  <button class="mini-btn" type="submit">Reset</button>
+                </form>
+              {% endif %}
+            </div>
+
+            {% if t.notes %}<div class="meta-row">Notes: {{ t.notes }}</div>{% endif %}
+
+            <details>
+              <summary>{{ 'Edit note' if t.notes else 'Add a note' }}</summary>
+              <form method="post" action="{{ url_for('save_notes', task_id=t.id) }}" class="nested-form">
+                <textarea name="notes" placeholder="Details, links, context...">{{ t.notes }}</textarea>
+                <button type="submit">Save note</button>
+              </form>
+            </details>
+
+            {% if not t.done %}
+            <details>
+              <summary>{{ 'Change reminder' if t.remind_at else 'Set a reminder' }}</summary>
+              <form method="post" action="{{ url_for('set_reminder', task_id=t.id) }}" class="nested-form">
+                <input type="datetime-local" name="remind_at" value="{{ t.remind_at }}" aria-label="Reminder time">
+                <button type="submit">Save reminder</button>
+              </form>
+            </details>
+            {% endif %}
+
+            <div style="display:flex; justify-content:flex-end;">
+              <form method="post" action="{{ url_for('delete', task_id=t.id) }}">
+                <button class="mini-btn" type="submit">Delete</button>
+              </form>
+            </div>
+          </li>
+        {% else %}
+          <li class="empty">No tasks here. Tap + to add one.</li>
+        {% endfor %}
+      </ul>
+    </section>
   </main>
 
 <script>
-  function fmt(s) {
-    s = Math.max(0, Math.floor(s));
-    return Math.floor(s / 3600) + ':' + String(Math.floor(s % 3600 / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  const addPanel = document.getElementById('add-panel');
+  const toggleAdd = document.getElementById('toggle-add');
+  toggleAdd.addEventListener('click', () => {
+    addPanel.classList.toggle('open');
+  });
+
+  const themeToggle = document.getElementById('theme-toggle');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const savedTheme = localStorage.getItem('flowpilot-theme');
+  if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+    document.body.classList.add('dark-theme');
+    themeToggle.textContent = '☀';
   }
-  const clockOffset = {{ now }} - Date.now() / 1000;
+  themeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark-theme');
+    const isDark = document.body.classList.contains('dark-theme');
+    localStorage.setItem('flowpilot-theme', isDark ? 'dark' : 'light');
+    themeToggle.textContent = isDark ? '☀' : '☾';
+  });
+
+  function fmt(seconds) {
+    seconds = Math.max(0, Math.floor(seconds));
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return String(minutes).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+  }
+
+  const clockOffset = Number({{ now }}) - (Date.now() / 1000);
   function tickTimers() {
     document.querySelectorAll('.timer[data-started]').forEach(el => {
       if (!el.dataset.started) return;
-      const elapsed = Date.now() / 1000 + clockOffset - Number(el.dataset.started);
-      el.querySelector('.clock').textContent = fmt(Number(el.dataset.spent) + elapsed);
+      const remaining = Number(el.dataset.remaining) - (Date.now() / 1000 + clockOffset - Number(el.dataset.started));
+      el.querySelector('.clock').textContent = fmt(Math.max(0, remaining));
+      if (remaining <= 0) {
+        const id = el.closest('[data-id]').dataset.id;
+        el.querySelector('.clock').textContent = '25:00';
+        fetch('/timer/' + id + '/complete', { method: 'POST' });
+        el.dataset.remaining = '1500';
+        el.dataset.started = '';
+        el.classList.remove('running');
+        const button = el.querySelector('button');
+        if (button) button.textContent = 'Start 25 min';
+      }
     });
   }
   setInterval(tickTimers, 1000);
   tickTimers();
 
-  const alerts = document.getElementById('alerts');
   function showReminder(li) {
     const title = li.dataset.title;
+    const alerts = document.getElementById('alerts');
     const box = document.createElement('div');
     box.className = 'alert';
     box.innerHTML = '<span></span><button>Dismiss</button>';
@@ -576,18 +443,21 @@
     fetch('/reminded/' + li.dataset.id, { method: 'POST' });
     li.removeAttribute('data-remind');
   }
-  function checkReminders() {
+
+  document.querySelectorAll('li[data-remind]').forEach(li => {
+    const reminderTime = new Date(li.dataset.remind);
+    if (!Number.isNaN(reminderTime.getTime()) && reminderTime <= new Date()) {
+      showReminder(li);
+    }
+  });
+  setInterval(() => {
     document.querySelectorAll('li[data-remind]').forEach(li => {
-      const reminderText = li.dataset.remind;
-      if (!reminderText) return;
-      const reminderTime = new Date(reminderText);
+      const reminderTime = new Date(li.dataset.remind);
       if (!Number.isNaN(reminderTime.getTime()) && reminderTime <= new Date()) {
         showReminder(li);
       }
     });
-  }
-  setInterval(checkReminders, 10000);
-  checkReminders();
+  }, 10000);
 </script>
 </body>
 </html>
