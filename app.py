@@ -16,7 +16,7 @@ def get_db():
     """Open one database connection per request."""
     if "db" not in g:
         g.db = sqlite3.connect(DB)
-        g.db.row_factory = sqlite3.Row  # lets us use row["title"]
+        g.db.row_factory = sqlite3.Row
     return g.db
 
 
@@ -27,12 +27,20 @@ def close_db(exc):
         db.close()
 
 
+@app.before_request
+def ensure_db():
+    """Create the database and schema before serving requests."""
+    init_db()
+
+
 def init_db():
     with sqlite3.connect(DB) as db:
         db.execute("""CREATE TABLE IF NOT EXISTS tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             notes TEXT DEFAULT '',
+            category TEXT DEFAULT 'general',
+            timeframe TEXT DEFAULT 'today',
             priority TEXT DEFAULT 'medium',   -- low / medium / high
             due TEXT,                         -- YYYY-MM-DD or empty
             done INTEGER DEFAULT 0,
@@ -41,9 +49,10 @@ def init_db():
             remind_at TEXT DEFAULT '',        -- YYYY-MM-DDTHH:MM, empty if no reminder
             reminded INTEGER DEFAULT 0        -- 1 once the reminder has fired
         )""")
-        # If you ran the earlier version, add the new columns to your old table.
         existing = [row[1] for row in db.execute("PRAGMA table_info(tasks)")]
-        for col, definition in [("time_spent", "INTEGER DEFAULT 0"),
+        for col, definition in [("category", "TEXT DEFAULT 'general'"),
+                                ("timeframe", "TEXT DEFAULT 'today'"),
+                                ("time_spent", "INTEGER DEFAULT 0"),
                                 ("timer_started", "INTEGER"),
                                 ("remind_at", "TEXT DEFAULT ''"),
                                 ("reminded", "INTEGER DEFAULT 0")]:
@@ -70,12 +79,20 @@ def normalize_reminder(value):
 def index():
     view = request.args.get("view", "all")
     q = request.args.get("q", "").strip()
+    category = request.args.get("category", "all")
+    timeframe = request.args.get("timeframe", "all")
 
     sql, params = "SELECT * FROM tasks WHERE 1=1", []
     if view == "open":
         sql += " AND done = 0"
     elif view == "done":
         sql += " AND done = 1"
+    if category != "all":
+        sql += " AND category = ?"
+        params.append(category)
+    if timeframe != "all":
+        sql += " AND timeframe = ?"
+        params.append(timeframe)
     if q:
         sql += " AND (title LIKE ? OR notes LIKE ?)"
         params += [f"%{q}%", f"%{q}%"]
@@ -87,6 +104,7 @@ def index():
     counts = get_db().execute(
         "SELECT SUM(done = 0) AS open, SUM(done = 1) AS done FROM tasks").fetchone()
     return render_template("index.html", tasks=tasks, view=view, q=q,
+                           category=category, timeframe=timeframe,
                            today=date.today().isoformat(), now=int(time.time()),
                            open_count=counts["open"] or 0,
                            done_count=counts["done"] or 0)
@@ -98,9 +116,13 @@ def add():
     if title:
         db = get_db()
         remind_at = normalize_reminder(request.form.get("remind_at", ""))
-        db.execute("INSERT INTO tasks (title, priority, due, remind_at) VALUES (?, ?, ?, ?)",
-                   (title, request.form.get("priority", "medium"),
-                    request.form.get("due", ""), remind_at))
+        db.execute("INSERT INTO tasks (title, category, timeframe, priority, due, remind_at) VALUES (?, ?, ?, ?, ?, ?)",
+                   (title,
+                    request.form.get("category", "general"),
+                    request.form.get("timeframe", "today"),
+                    request.form.get("priority", "medium"),
+                    request.form.get("due", ""),
+                    remind_at))
         db.commit()
     return redirect(url_for("index"))
 
@@ -191,12 +213,6 @@ def delete(task_id):
     db.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
     db.commit()
     return redirect(request.referrer or url_for("index"))
-
-
-@app.before_request
-def ensure_db():
-    """Create the database and schema when Flask serves the app under WSGI or other non-__main__ entrypoints."""
-    init_db()
 
 
 if __name__ == "__main__":
