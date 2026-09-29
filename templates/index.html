@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tasks</title>
+<style>
+  :root {
+    --ink:#1f2a37; --muted:#6b7684; --paper:#f7f8fa; --card:#fff; --line:#e3e7ec;
+    --accent:#2f5d8a; --hl:#fff3a8; --high:#c0392b; --med:#c98a12; --low:#5b8a6b;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink);
+         font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:680px; margin:0 auto; padding:40px 20px 80px; }
+  h1 { font-size:2rem; margin:0 0 4px; letter-spacing:-.02em; }
+  .sub { color:var(--muted); margin:0 0 24px; }
+  form { margin:0; }
+  .add { display:flex; flex-wrap:wrap; gap:8px; background:var(--card); padding:12px;
+         border:1px solid var(--line); border-radius:10px; }
+  .add input[type=text] { flex:1 1 220px; }
+  input, select, textarea, button { font:inherit; }
+  input, select, textarea { border:1px solid var(--line); border-radius:6px; padding:8px 10px; background:#fff; color:var(--ink); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  button { cursor:pointer; border:0; border-radius:6px; padding:8px 14px; background:var(--accent); color:#fff; }
+  button.ghost { background:none; color:var(--muted); padding:4px 8px; }
+  button.ghost:hover { color:var(--high); }
+  .bar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin:22px 0 12px; }
+  .tabs a { color:var(--muted); text-decoration:none; padding:4px 10px; border-radius:20px; margin-right:2px; }
+  .tabs a.on { background:var(--ink); color:#fff; }
+  .search { display:flex; gap:6px; }
+  ul { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+  li { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--med);
+       border-radius:10px; padding:12px 14px; }
+  li.high { border-left-color:var(--high); } li.low { border-left-color:var(--low); }
+  .row { display:flex; align-items:center; gap:10px; }
+  .check { width:22px; height:22px; border-radius:50%; border:2px solid var(--muted); background:none; padding:0; color:#fff; flex:none; line-height:1; }
+  .done .check { background:var(--low); border-color:var(--low); }
+  .title { flex:1; font-weight:500; }
+  .done .title { text-decoration:line-through; color:var(--muted); }
+  .meta { font-size:.85rem; color:var(--muted); margin:2px 0 0 32px; }
+  .late { color:var(--high); font-weight:600; }
+  details { margin:8px 0 0 32px; }
+  summary { cursor:pointer; color:var(--accent); font-size:.9rem; }
+  textarea { width:100%; min-height:80px; margin:8px 0; background:var(--hl); border-color:#ead96b; resize:vertical; }
+  .peek { margin:8px 0 0 32px; padding:6px 10px; background:var(--hl); border-radius:6px; font-size:.9rem; white-space:pre-wrap; }
+  .timer { display:flex; align-items:center; gap:8px; margin:8px 0 0 32px; font-size:.9rem; }
+  .clock { font-variant-numeric:tabular-nums; font-weight:600; min-width:64px; }
+  .running .clock { color:var(--accent); }
+  .timer button { padding:3px 12px; font-size:.85rem; }
+  .timer button.stop { background:var(--high); }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--high); animation:blink 1.2s infinite; }
+  @keyframes blink { 50% { opacity:.2; } }
+  @media (prefers-reduced-motion:reduce) { .dot { animation:none; } }
+  .alerts { display:grid; gap:8px; margin:0 0 16px; }
+  .alert { display:flex; justify-content:space-between; align-items:center; gap:10px; background:#fdecea;
+           border:1px solid #f1b8b1; border-left:4px solid var(--high); border-radius:10px; padding:10px 14px; }
+  .alert button { background:var(--high); }
+  .tools { display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:.9rem; color:var(--muted); }
+  .empty { text-align:center; color:var(--muted); padding:40px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Tasks</h1>
+  <p class="sub">{{ open_count }} to do, {{ done_count }} done</p>
+
+  <div class="alerts" id="alerts" role="status" aria-live="polite"></div>
+
+  <form class="add" method="post" action="{{ url_for('add') }}">
+    <input type="text" name="title" placeholder="What needs doing?" required autofocus>
+    <select name="priority" aria-label="Priority">
+      <option value="high">High</option>
+      <option value="medium" selected>Medium</option>
+      <option value="low">Low</option>
+    </select>
+    <input type="date" name="due" aria-label="Due date">
+    <input type="datetime-local" name="remind_at" aria-label="Reminder time" placeholder="Reminder">
+    <button>Add task</button>
+  </form>
+
+  <div class="bar">
+    <nav class="tabs">
+      {% for v, label in [('all','All'),('open','To do'),('done','Done')] %}
+        <a href="{{ url_for('index', view=v, q=q) }}" class="{{ 'on' if view==v }}">{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <form class="search" method="get">
+      <input type="hidden" name="view" value="{{ view }}">
+      <input type="search" name="q" value="{{ q }}" placeholder="Search tasks and notes">
+      <button>Search</button>
+    </form>
+  </div>
+
+  <ul>
+  {% for t in tasks %}
+    <li class="{{ t.priority }} {{ 'done' if t.done }}" data-id="{{ t.id }}" data-title="{{ t.title }}"
+        {% if t.remind_at and not t.reminded and not t.done %}data-remind="{{ t.remind_at }}"{% endif %}>
+      <div class="row">
+        <form method="post" action="{{ url_for('toggle', task_id=t.id) }}">
+          <button class="check" aria-label="Mark as {{ 'to do' if t.done else 'done' }}">{{ '✓' if t.done }}</button>
+        </form>
+        <span class="title">{{ t.title }}</span>
+        <form method="post" action="{{ url_for('delete', task_id=t.id) }}">
+          <button class="ghost" aria-label="Delete task">Delete</button>
+        </form>
+      </div>
+      <div class="meta">
+        {{ t.priority|capitalize }} priority
+        {% if t.due %}
+          &middot; <span class="{{ 'late' if t.due < today and not t.done }}">
+            {{ 'Overdue: ' if t.due < today and not t.done }}Due {{ t.due }}</span>
+        {% endif %}
+      </div>
+      {% if t.remind_at %}
+        <div class="meta">Reminder: {{ t.remind_at.replace('T', ' at ') }}{{ ' (shown)' if t.reminded }}</div>
+      {% endif %}
+      <div class="timer {{ 'running' if t.timer_started }}" data-spent="{{ t.time_spent }}" data-started="{{ t.timer_started or '' }}">
+        {% if t.timer_started %}<span class="dot" aria-hidden="true"></span>{% endif %}
+        <span class="clock">{{ t.time_spent|hms }}</span>
+        {% if not t.done %}
+          <form method="post" action="{{ url_for('timer', task_id=t.id) }}">
+            <button class="{{ 'stop' if t.timer_started }}">{{ 'Stop timer' if t.timer_started else ('Resume timer' if t.time_spent else 'Start timer') }}</button>
+          </form>
+        {% endif %}
+        {% if t.time_spent and not t.timer_started %}
+          <form method="post" action="{{ url_for('timer_reset', task_id=t.id) }}"><button class="ghost">Reset</button></form>
+        {% endif %}
+      </div>
+      {% if t.notes %}<div class="peek">{{ t.notes }}</div>{% endif %}
+      <details>
+        <summary>{{ 'Edit note' if t.notes else 'Add a note' }}</summary>
+        <form method="post" action="{{ url_for('save_notes', task_id=t.id) }}">
+          <textarea name="notes" placeholder="Details, links, reminders...">{{ t.notes }}</textarea>
+          <button>Save note</button>
+        </form>
+      </details>
+      {% if not t.done %}
+      <details>
+        <summary>{{ 'Change reminder' if t.remind_at else 'Set a reminder' }}</summary>
+        <form method="post" action="{{ url_for('set_reminder', task_id=t.id) }}" class="row" style="margin-top:8px">
+          <input type="datetime-local" name="remind_at" value="{{ t.remind_at }}" aria-label="Reminder time">
+          <button>Save reminder</button>
+        </form>
+        <small class="meta" style="margin:0">Leave the time empty and save to remove the reminder.</small>
+      </details>
+      {% endif %}
+    </li>
+  {% else %}
+    <li class="empty">{{ 'No matches. Try a different search.' if q else 'Nothing here yet. Add your first task above.' }}</li>
+  {% endfor %}
+  </ul>
+
+  <div class="tools">
+    <span>Reminders appear here while this page is open.</span>
+    <button class="ghost" id="notify-btn" hidden>Turn on desktop alerts</button>
+  </div>
+</main>
+
+<script>
+  // ---- Live timers: the server stores start time, the page just ticks the display ----
+  function fmt(s) {
+    s = Math.max(0, Math.floor(s));
+    return Math.floor(s / 3600) + ":" + String(Math.floor(s % 3600 / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+  }
+  // difference between the server's clock and the browser's, so the display stays accurate
+  const clockOffset = {{ now }} - Date.now() / 1000;
+  function tickTimers() {
+    document.querySelectorAll(".timer[data-started]").forEach(el => {
+      if (!el.dataset.started) return;
+      const elapsed = Date.now() / 1000 + clockOffset - Number(el.dataset.started);
+      el.querySelector(".clock").textContent = fmt(Number(el.dataset.spent) + elapsed);
+    });
+  }
+  setInterval(tickTimers, 1000);
+  tickTimers();
+
+  // ---- Reminders: check every 10 seconds whether any are due ----
+  const alerts = document.getElementById("alerts");
+  function showReminder(li) {
+    const title = li.dataset.title;
+    const box = document.createElement("div");
+    box.className = "alert";
+    box.innerHTML = "<span></span><button>Dismiss</button>";
+    box.firstChild.textContent = "Reminder: " + title;
+    box.querySelector("button").onclick = () => box.remove();
+    alerts.appendChild(box);
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification("Task reminder", { body: title });
+    }
+    fetch("/reminded/" + li.dataset.id, { method: "POST" });
+    li.removeAttribute("data-remind");
+  }
+  function checkReminders() {
+    document.querySelectorAll("li[data-remind]").forEach(li => {
+      const reminderText = li.dataset.remind;
+      if (!reminderText) return;
+      const reminderTime = new Date(reminderText);
+      if (!Number.isNaN(reminderTime.getTime()) && reminderTime <= new Date()) {
+        showReminder(li);
+      }
+    });
+  }
+  setInterval(checkReminders, 10000);
+  checkReminders();
+
+  // ---- Desktop notification permission ----
+  const notifyBtn = document.getElementById("notify-btn");
+  if ("Notification" in window && Notification.permission === "default") {
+    notifyBtn.hidden = false;
+    notifyBtn.onclick = () => Notification.requestPermission().then(() => notifyBtn.hidden = true);
+  }
+</script>
+</body>
+</html>

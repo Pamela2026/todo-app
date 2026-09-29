@@ -1,0 +1,199 @@
+"""A simple to-do app with notes and priorities/due dates.
+Run with:  python3 app.py   then open http://127.0.0.1:5000
+"""
+import os
+import sqlite3
+import time
+from datetime import date
+from flask import Flask, render_template, request, redirect, url_for, g
+
+app = Flask(__name__)
+DB = "todo.db"
+
+
+def get_db():
+    """Open one database connection per request."""
+    if "db" not in g:
+        g.db = sqlite3.connect(DB)
+        g.db.row_factory = sqlite3.Row  # lets us use row["title"]
+    return g.db
+
+
+@app.teardown_appcontext
+def close_db(exc):
+    db = g.pop("db", None)
+    if db:
+        db.close()
+
+
+def init_db():
+    with sqlite3.connect(DB) as db:
+        db.execute("""CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            notes TEXT DEFAULT '',
+            priority TEXT DEFAULT 'medium',   -- low / medium / high
+            due TEXT,                         -- YYYY-MM-DD or empty
+            done INTEGER DEFAULT 0,
+            time_spent INTEGER DEFAULT 0,     -- seconds tracked by the timer
+            timer_started INTEGER,            -- when the timer started (epoch secs), empty if stopped
+            remind_at TEXT DEFAULT '',        -- YYYY-MM-DDTHH:MM, empty if no reminder
+            reminded INTEGER DEFAULT 0        -- 1 once the reminder has fired
+        )""")
+        # If you ran the earlier version, add the new columns to your old table.
+        existing = [row[1] for row in db.execute("PRAGMA table_info(tasks)")]
+        for col, definition in [("time_spent", "INTEGER DEFAULT 0"),
+                                ("timer_started", "INTEGER"),
+                                ("remind_at", "TEXT DEFAULT ''"),
+                                ("reminded", "INTEGER DEFAULT 0")]:
+            if col not in existing:
+                db.execute(f"ALTER TABLE tasks ADD COLUMN {col} {definition}")
+
+
+@app.template_filter("hms")
+def hms(seconds):
+    """Turn 3725 into '1:02:05' for display."""
+    seconds = int(seconds or 0)
+    return f"{seconds // 3600}:{seconds % 3600 // 60:02d}:{seconds % 60:02d}"
+
+
+def normalize_reminder(value):
+    """Normalize reminder input to the browser-friendly format used by datetime-local."""
+    if not value:
+        return ""
+    value = value.strip()
+    return value.replace("Z", "")
+
+
+@app.route("/")
+def index():
+    view = request.args.get("view", "all")
+    q = request.args.get("q", "").strip()
+
+    sql, params = "SELECT * FROM tasks WHERE 1=1", []
+    if view == "open":
+        sql += " AND done = 0"
+    elif view == "done":
+        sql += " AND done = 1"
+    if q:
+        sql += " AND (title LIKE ? OR notes LIKE ?)"
+        params += [f"%{q}%", f"%{q}%"]
+    sql += """ ORDER BY done,
+        CASE priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END,
+        due IS NULL OR due = '', due"""
+    tasks = get_db().execute(sql, params).fetchall()
+
+    counts = get_db().execute(
+        "SELECT SUM(done = 0) AS open, SUM(done = 1) AS done FROM tasks").fetchone()
+    return render_template("index.html", tasks=tasks, view=view, q=q,
+                           today=date.today().isoformat(), now=int(time.time()),
+                           open_count=counts["open"] or 0,
+                           done_count=counts["done"] or 0)
+
+
+@app.route("/add", methods=["POST"])
+def add():
+    title = request.form["title"].strip()
+    if title:
+        db = get_db()
+        remind_at = normalize_reminder(request.form.get("remind_at", ""))
+        db.execute("INSERT INTO tasks (title, priority, due, remind_at) VALUES (?, ?, ?, ?)",
+                   (title, request.form.get("priority", "medium"),
+                    request.form.get("due", ""), remind_at))
+        db.commit()
+    return redirect(url_for("index"))
+
+
+@app.route("/toggle/<int:task_id>", methods=["POST"])
+def toggle(task_id):
+    db = get_db()
+    current = db.execute("SELECT done, timer_started FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    if current is None:
+        return redirect(url_for("index"))
+
+    new_done = 1 - current["done"]
+    db.execute("UPDATE tasks SET done = ? WHERE id = ?", (new_done, task_id))
+
+    if new_done == 1 and current["timer_started"] is not None:
+        now = int(time.time())
+        db.execute("UPDATE tasks SET time_spent = time_spent + (? - timer_started), timer_started = NULL WHERE id = ?",
+                   (now, task_id))
+
+    db.commit()
+    return redirect(request.referrer or url_for("index"))
+
+
+@app.route("/notes/<int:task_id>", methods=["POST"])
+def save_notes(task_id):
+    db = get_db()
+    db.execute("UPDATE tasks SET notes = ? WHERE id = ?",
+               (request.form["notes"], task_id))
+    db.commit()
+    return redirect(request.referrer or url_for("index"))
+
+
+@app.route("/timer/<int:task_id>", methods=["POST"])
+def timer(task_id):
+    """Start or stop the timer on a task. Only one timer runs at a time."""
+    db = get_db()
+    now = int(time.time())
+
+    db.execute("UPDATE tasks SET time_spent = time_spent + (? - timer_started), timer_started = NULL WHERE timer_started IS NOT NULL AND id != ?",
+               (now, task_id))
+
+    row = db.execute("SELECT timer_started FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    if row is None:
+        db.commit()
+        return redirect(request.referrer or url_for("index"))
+
+    if row["timer_started"] is not None:
+        db.execute("UPDATE tasks SET time_spent = time_spent + (? - timer_started), timer_started = NULL WHERE id = ?",
+                   (now, task_id))
+    else:
+        db.execute("UPDATE tasks SET timer_started = ? WHERE id = ? AND done = 0", (now, task_id))
+
+    db.commit()
+    return redirect(request.referrer or url_for("index"))
+
+
+@app.route("/timer/<int:task_id>/reset", methods=["POST"])
+def timer_reset(task_id):
+    db = get_db()
+    db.execute("UPDATE tasks SET time_spent = 0, timer_started = NULL WHERE id = ?", (task_id,))
+    db.commit()
+    return redirect(request.referrer or url_for("index"))
+
+
+@app.route("/remind/<int:task_id>", methods=["POST"])
+def set_reminder(task_id):
+    """Save (or clear, if left empty) a reminder time for a task."""
+    db = get_db()
+    value = normalize_reminder(request.form.get("remind_at", ""))
+    db.execute("UPDATE tasks SET remind_at = ?, reminded = 0 WHERE id = ?",
+               (value, task_id))
+    db.commit()
+    return redirect(request.referrer or url_for("index"))
+
+
+@app.route("/reminded/<int:task_id>", methods=["POST"])
+def mark_reminded(task_id):
+    """Called by the page's JavaScript after it has shown a reminder."""
+    db = get_db()
+    db.execute("UPDATE tasks SET reminded = 1 WHERE id = ?", (task_id,))
+    db.commit()
+    return ("", 204)
+
+
+@app.route("/delete/<int:task_id>", methods=["POST"])
+def delete(task_id):
+    db = get_db()
+    db.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    db.commit()
+    return redirect(request.referrer or url_for("index"))
+
+
+if __name__ == "__main__":
+    init_db()
+    port = int(os.environ.get("PORT", "5000"))
+    debug = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(debug=debug, host="127.0.0.1", port=port, use_reloader=False)
