@@ -8,7 +8,8 @@ from datetime import date
 from flask import Flask, render_template, request, redirect, url_for, g
 
 app = Flask(__name__)
-DB = "todo.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB = os.path.join(BASE_DIR, "todo.db")
 
 
 def get_db():
@@ -190,6 +191,12 @@ def delete(task_id):
     db.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
     db.commit()
     return redirect(request.referrer or url_for("index"))
+
+
+@app.before_request
+def ensure_db():
+    """Create the database and schema when Flask serves the app under WSGI or other non-__main__ entrypoints."""
+    init_db()
 
 
 if __name__ == "__main__":
